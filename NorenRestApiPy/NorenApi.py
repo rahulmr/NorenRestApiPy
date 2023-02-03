@@ -1253,7 +1253,7 @@ class NorenApi(object):
             return None
         return resDict["al_id"]
 
-    def place_gtt_order(
+    def place_gtt_mkt_order(
         self,
         tradingsymbol: str,
         exchange: str,
@@ -1264,6 +1264,57 @@ class NorenApi(object):
         quantity: int,
         price_type: str = "MKT",
         price: float = 0.0,
+        remarks: str = None,
+        retention: str = "DAY",
+        validity: str = "GTT",
+        discloseqty: int = 0,
+    ):
+        # prepare the uri
+        config = NorenApi.__service_config
+        url = f"{config['host']}{config['routes']['placegtt']}"
+        reportmsg(url)
+
+        # prepare the data
+        values = {"ordersource": "API"}
+        values["uid"] = self.__username
+        values["actid"] = self.__accountid
+        values["tsym"] = urllib.parse.quote_plus(tradingsymbol)
+        values["exch"] = exchange
+        values["ai_t"] = alert_type
+        values["validity"] = validity
+        values["d"] = str(alert_price)
+        values["remarks"] = remarks
+        values["trantype"] = buy_or_sell
+        values["prctyp"] = price_type
+        values["prd"] = product_type
+        values["ret"] = retention
+        values["qty"] = str(quantity)
+        values["prc"] = str(price)
+        values["dscqty"] = str(discloseqty)
+
+        payload = "jData=" + json.dumps(values) + f"&jKey={self.__susertoken}"
+        reportmsg(payload)
+
+        res = requests.post(url, data=payload)
+        reportmsg(res.text)
+
+        resDict = json.loads(res.text)
+        if resDict["stat"] != "OI created":
+            return None
+
+        return resDict["al_id"]
+    
+    def place_gtt_limit_order(
+        self,
+        tradingsymbol: str,
+        exchange: str,
+        alert_type: str,  # 'LTP_A_O' or 'LTP_B_O'
+        alert_price: float,
+        buy_or_sell: str,  # 'B' or 'S'
+        product_type: str,  # 'I' Intraday, 'C' Delivery, 'M' Normal Margin for options
+        quantity: int,
+        price_type: str,
+        price: float ,
         remarks: str = None,
         retention: str = "DAY",
         validity: str = "GTT",
